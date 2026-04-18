@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Fraunces", ui-serif, Georgia, serif;
+
+  /* ——— Modern luxury palette ———
+     Warm bone whites, deep onyx, refined champagne, jewel forest. */
+  --color-cream: #F4EFE6;          /* primary light surface — warm bone */
+  --color-cream-2: #EAE2D2;        /* secondary surface — sand */
+  --color-ink: #0E0E11;            /* primary dark — onyx */
+  --color-ink-2: #2A2925;          /* warm charcoal body text */
+  --color-coal: #17171B;           /* card surface on dark */
+  --color-mute: #8C8478;           /* warm taupe muted */
+  --color-line: #DDD4C2;           /* warm hairline */
+  --color-line-dark: #2D2C28;      /* hairline on dark */
+  --color-gold: #C9A96A;           /* refined champagne */
+  --color-gold-dark: #8E7440;      /* deep champagne */
+  --color-champagne: #E5CFA0;      /* light champagne for highlights */
+  --color-emerald: #1F3A33;        /* deep jewel forest */
+  --color-emerald-dark: #122621;
+  --color-claret: #5A2A33;         /* deep wine accent (sparingly) */
+  --color-whatsapp: #25D366;
+}
+
+html, body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+/* Refined serif with optical sizing where supported */
+.font-serif {
+  font-feature-settings: "ss01", "ss02";
+  letter-spacing: -0.015em;
+}
+
+/* —— Animations —— */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.rise { animation: rise .7s cubic-bezier(.2,.7,.2,1) both; }
+.rise-delay-1 { animation-delay: .12s; }
+.rise-delay-2 { animation-delay: .24s; }
+.rise-delay-3 { animation-delay: .36s; }
+
+@keyframes kenburns {
+  0%   { transform: scale(1.06) translate(0, 0); }
+  50%  { transform: scale(1.16) translate(-1.5%, -1%); }
+  100% { transform: scale(1.06) translate(0, 0); }
+}
+.kenburns { animation: kenburns 22s ease-in-out infinite; }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee { animation: marquee 38s linear infinite; }
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-10px); }
+}
+.float-slow { animation: float-slow 7s ease-in-out infinite; }
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.45); }
+  70%  { box-shadow: 0 0 0 14px rgba(37, 211, 102, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+}
+.pulse-ring { animation: pulse-ring 2.4s ease-out infinite; }
+
+/* —— Utilities —— */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Champagne gradient text */
+.gold-text {
+  background: linear-gradient(100deg, #E5CFA0 0%, #C9A96A 35%, #8E7440 55%, #E5CFA0 85%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 9s linear infinite;
+}
+
+/* Subtle film grain overlay for hero */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .12;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Hairline divider with gold pip */
+.hr-gold {
+  display: flex; align-items: center; gap: .65rem;
+}
+.hr-gold::before, .hr-gold::after {
+  content: ""; flex: 1; height: 1px; background: currentColor; opacity: .25;
+}
+
+/* Glass surface for floating cards on dark hero */
+.glass {
+  background: rgba(244, 239, 230, 0.08);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(244, 239, 230, 0.14);
+}
+.glass-light {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: 1px solid rgba(14, 14, 17, 0.06);
+}
+
+/* Premium button with subtle inner highlight */
+.btn-gold {
+  background: linear-gradient(180deg, #E5CFA0 0%, #C9A96A 55%, #A6884A 100%);
+  color: #1A1612;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.45),
+    inset 0 -1px 0 rgba(0,0,0,.12),
+    0 8px 24px -8px rgba(201, 169, 106, .55);
+}
+.btn-gold:hover { filter: brightness(1.04); }
+
+/* Editorial number with thin diagonal stroke */
+.num-eyebrow {
+  font-family: var(--font-serif);
+  font-feature-settings: "lnum";
+  font-style: italic;
+  font-weight: 300;
+}
+
+/* Card hover lift */
+.card-hover { transition: transform .5s cubic-bezier(.2,.7,.2,1), box-shadow .4s; }
+.card-hover:hover { transform: translateY(-4px); }
+
+/* —— Scroll-reveal (driven by IntersectionObserver hook) —— */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 1.1s cubic-bezier(.2,.7,.2,1), transform 1.1s cubic-bezier(.2,.7,.2,1);
+  will-change: opacity, transform;
+}
+.reveal.in { opacity: 1; transform: translateY(0); }
+.reveal-left  { transform: translateX(-32px); }
+.reveal-left.in { transform: translateX(0); }
+.reveal-right { transform: translateX(32px); }
+.reveal-right.in { transform: translateX(0); }
+.reveal-scale { transform: scale(.96); }
+.reveal-scale.in { transform: scale(1); }
+.reveal-d1 { transition-delay: .12s; }
+.reveal-d2 { transition-delay: .24s; }
+.reveal-d3 { transition-delay: .36s; }
+.reveal-d4 { transition-delay: .48s; }
+
+/* Parallax fixed background section (disabled on small screens for perf) */
+.parallax {
+  background-attachment: scroll;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+@media (min-width: 768px) {
+  .parallax { background-attachment: fixed; }
+}
+
+/* Slow zoom on image backgrounds — gentler than kenburns */
+@keyframes drift {
+  0%   { transform: scale(1.05) translate3d(0, 0, 0); }
+  50%  { transform: scale(1.12) translate3d(-1%, -1.5%, 0); }
+  100% { transform: scale(1.05) translate3d(0, 0, 0); }
+}
+.drift { animation: drift 28s ease-in-out infinite; }
+
+/* Soft vignette for image backdrops */
+.vignette::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 40%, rgba(14,14,17,.55) 100%);
+}
+
+/* Image-reveal mask wipe (used on hero stack) */
+@keyframes mask-up {
+  from { clip-path: inset(100% 0 0 0); }
+  to   { clip-path: inset(0 0 0 0); }
+}
+.mask-up { animation: mask-up 1.4s cubic-bezier(.7,.05,.2,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .reveal-left, .reveal-right, .reveal-scale {
+    opacity: 1 !important; transform: none !important;
+  }
+  .drift, .kenburns, .float-slow, .marquee, .pulse-ring, .gold-text, .mask-up {
+    animation: none !important;
+  }
+}
