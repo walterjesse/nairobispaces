@@ -1,44 +1,49 @@
-# Nairobi Spaces — Bug Fixes TODO
+# Nairobi Spaces — Fix & Deploy Checklist
 
-Root-cause summary of errors from browser console:
-1. `fmtKES` crashed on `undefined` → `toLocaleString` TypeError inside `<Hero>`.
-2. Supabase returned `price_per_night` (snake_case) but UI reads `pricePerNight`
-   (camelCase) → always undefined → triggers #1.
-3. `.single()` on a missing neighborhood row returns HTTP 406.
-4. Multiple `GoTrueClient` instances warning from duplicate client creation.
-5. Stale-closure bug in `Stays.tsx` — filter options built from empty `listings`
-   state because the code referenced `listings` instead of the freshly-loaded data.
+## ✅ Console Errors Fixed
+- [x] `fmtKES`/`fmtUSD` accept `number | null | undefined` (src/data/site.ts)
+- [x] Supabase singleton via `globalThis` to prevent duplicate GoTrueClient warnings (src/lib/supabase.ts)
+- [x] Unique `storageKey: 'sb-nairobi-spaces-auth'` to scope the session store
+- [x] `normalizeListing` / `normalizeListings` / `normalizeNeighborhood` helpers map snake_case ↔ camelCase
+- [x] All pages fall back to local `LISTINGS` / `GUIDES` when Supabase not configured or returns empty
+- [x] Switched `.single()` → `.maybeSingle()` on Neighborhood/Listing detail pages (removes 406 errors)
+- [x] Fixed stale-closure bug in Stays.tsx filter extraction
+- [x] Defensive fallbacks: `Array.isArray(...)`, `?? 0`, `?? []` everywhere a field could be missing
 
-## Steps
+## ✅ Supabase Migration & Seed
+- [x] `supabase/migrations/001_schema.sql` — listings, neighborhoods, admin_users + RLS policies
+- [x] `supabase/migrations/002_seed.sql` — 6 neighborhoods + 3 listings, idempotent upserts
+- [x] `scripts/seed-supabase.ts` + `npm run seed` (requires SUPABASE_SERVICE_ROLE_KEY)
+- [x] SUPABASE_SETUP.md updated with run instructions
+- [ ] Flagged: `kilimani-garden-two-bed` mock data has Karen-themed description/area_notes while neighborhood="Kilimani" — pre-existing inconsistency, not fixed
 
-- [x] 1. Harden `src/data/site.ts` — `fmtKES` / `fmtUSD` tolerate `null`/`undefined`/non-finite.
-- [x] 2. Rewrite `src/lib/supabase.ts` — singleton client via `globalThis`, custom
-      `storageKey`, plus `normalizeListing` / `normalizeListings` /
-      `normalizeNeighborhood` helpers that map snake_case ↔ camelCase.
-- [x] 3. `src/pages/Home.tsx` — normalize listings on load, guard empty data.
-- [x] 4. `src/pages/Stays.tsx` — fix stale closure (use `loaded` local var),
-      normalize data, support both `pricePerNight` and `price_per_night` in
-      filters, make `maxPrice` always apply.
-- [x] 5. `src/pages/Listing.tsx` — switch to `.maybeSingle()`, normalize,
-      defensive field access with camel/snake fallbacks and array guards.
-- [x] 6. `src/pages/Neighborhoods.tsx` — `.maybeSingle()`, normalize, graceful
-      fallback when Supabase row missing, safe min-price calc.
-- [x] 7. Smoke test: `npm run dev` — dev server is up on http://localhost:5175/nairobispaces/
+## ✅ GitHub Deployment
+- [x] Pushed main branch to https://github.com/walterjesse/nairobispaces
+- [x] `.github/workflows/deploy.yml` — GitHub Actions build + Pages deploy
+- [x] `gh-pages` branch deployed cleanly (index.html, 404.html, assets/, images/)
+- [x] `vite.config.ts` base correctly set to `/nairobispaces/`
 
-## Database seeding (added per follow-up request)
+## ⚠️ USER ACTIONS REQUIRED
 
-- [x] 8. `supabase/migrations/001_schema.sql` — `CREATE TABLE IF NOT EXISTS` for
-      `listings`, `neighborhoods` (new), `admin_users`; RLS policies (public
-      read, admin write); indexes on `slug` + `neighborhood`.
-- [x] 9. `supabase/migrations/002_seed.sql` — Idempotent
-      `INSERT … ON CONFLICT (slug) DO UPDATE` for the 6 neighborhood guides
-      and 3 sample listings used as the UI fallback.
-- [x] 10. `scripts/seed-supabase.ts` + `npm run seed` — Optional Node seeder
-       (uses service-role key) for keeping Supabase in sync with the TS source.
-- [x] 11. `SUPABASE_SETUP.md` — Documented how to apply the migrations and run
-       the Node seeder.
+### 1. Enable GitHub Pages
+Go to: https://github.com/walterjesse/nairobispaces/settings/pages
+- **Source**: Deploy from a branch
+- **Branch**: `gh-pages` → `/ (root)`
+- Save. Live URL: https://walterjesse.github.io/nairobispaces/ (takes 1–2 min first time)
 
-> ⚠️ Note for follow-up: the local mock listing `kilimani-garden-two-bed`
-> carries `neighborhood: "Kilimani"` but its `description` / `area_notes`
-> reference Karen. The seed faithfully copies the existing data — flag if it
-> should be corrected.
+### 2. 🔐 ROTATE SUPABASE CREDENTIALS (IMPORTANT)
+An earlier deploy attempt briefly pushed `.env.local` to the `gh-pages` branch on GitHub (now overwritten, but it may remain in git history). Rotate the anon key as a precaution:
+- Supabase Dashboard → Project Settings → API → Reset anon key
+- Update `.env.local` locally
+- Add new key as GitHub Secret `VITE_SUPABASE_ANON_KEY` (Settings → Secrets → Actions) if using the Actions workflow
+
+### 3. (Optional) Seed Database
+```powershell
+# Install seeder deps once
+npm i -D tsx dotenv
+
+# Add SUPABASE_SERVICE_ROLE_KEY to .env.local, then:
+npm run seed
+```
+
+Or paste `supabase/migrations/001_schema.sql` then `002_seed.sql` into Supabase SQL Editor.
