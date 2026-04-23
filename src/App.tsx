@@ -7,7 +7,7 @@ import { ListingPage } from "./pages/Listing";
 import { OwnersPage } from "./pages/Owners";
 import { NeighborhoodsIndex, NeighborhoodPage } from "./pages/Neighborhoods";
 import { QuizPage } from "./pages/Quiz";
-import { AdminLoginPage, AdminDashboardPage, AdminListingFormPage, AdminNeighborhoodFormPage, AdminNeighborhoodsListPage } from "./pages/Admin";
+import { AdminLoginPage, AdminDashboardPage, AdminListingFormPage } from "./pages/Admin";
 
 export default function App() {
   const route = useHashRoute();
@@ -25,9 +25,6 @@ export default function App() {
   else if (r.name === "admin-login") page = <AdminLoginPage />;
   else if (r.name === "admin") page = <AdminDashboardPage />;
   else if (r.name === "admin-new" || r.name === "admin-edit") page = <AdminListingFormPage />;
-  else if (r.name === "admin-neighborhoods") page = <AdminNeighborhoodsListPage />;
-  else if (r.name === "admin-neighborhood-new") page = <AdminNeighborhoodFormPage />;
-  else if (r.name === "admin-neighborhood-edit") page = <AdminNeighborhoodFormPage neighborhoodId={r.param} />;
 
   return (
     <div className="min-h-screen flex flex-col">

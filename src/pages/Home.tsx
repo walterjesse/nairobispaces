@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Link } from "../router";
-import { appStore } from "../store/appStore";
 import {
   BRAND,
   FOUNDER,
@@ -62,12 +61,8 @@ export function HomePage() {
   const [neighborhoods, setNeighborhoods] = useState<any[]>([]);
 
   useEffect(() => {
-    const loadData = async () => {
-      await appStore.init();
-      setListings(appStore.getListings());
-      setNeighborhoods(appStore.getNeighborhoods());
-    };
-    loadData();
+    setListings([...LISTINGS]);
+    setNeighborhoods([...NEIGHBORHOODS]);
   }, []);
 
   return (

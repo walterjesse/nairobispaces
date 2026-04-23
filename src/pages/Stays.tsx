@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "../router";
-import { appStore } from "../store/appStore";
+import { LISTINGS } from "../data/listings";
 import { fmtKES, fmtUSD } from "../data/site";
 
 function ListingCard({ listing }: { listing: any }) {
@@ -63,22 +63,20 @@ export function StaysPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = async () => {
-      await appStore.init();
-      const data = appStore.getListings();
-      setListings(data);
+    const loadData = () => {
+      setListings(LISTINGS);
       setLoading(false);
 
       // Extract unique neighborhoods
-      const uniqueNeighborhoods = [...new Set(data.map((l: any) => l.neighborhood))];
+      const uniqueNeighborhoods = [...new Set(LISTINGS.map((l: any) => l.neighborhood))];
       setNeighborhoods(["All", ...uniqueNeighborhoods]);
 
       // Extract unique tags
-      const uniqueTags = [...new Set(data.flatMap((l: any) => l.perfectFor || []))];
+      const uniqueTags = [...new Set(LISTINGS.flatMap((l: any) => l.perfectFor || []))];
       setAllTags(["All", ...uniqueTags]);
 
       // Extract unique amenities
-      const uniqueAmenities = [...new Set(data.flatMap((l: any) => l.amenities || []))];
+      const uniqueAmenities = [...new Set(LISTINGS.flatMap((l: any) => l.amenities || []))];
       setAllAmenities(["All", ...uniqueAmenities]);
     };
     loadData();
