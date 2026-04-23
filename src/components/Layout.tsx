@@ -7,7 +7,6 @@ const NAV = [
   { to: "/neighborhoods", label: "Neighborhoods" },
   { to: "/quiz", label: "Find my stay" },
   { to: "/owners", label: "For Owners" },
-  { to: "/strategy", label: "Strategy" },
 ];
 
 export function Header() {
