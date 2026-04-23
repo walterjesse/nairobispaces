@@ -1,40 +1,95 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "../router";
-import { LISTINGS, NEIGHBORHOODS } from "../data/listings";
-import { GUIDES } from "../data/neighborhoods";
+import { appStore } from "../store/appStore";
 import {
   BRAND,
   FOUNDER,
   fmtKES,
   INSTAGRAM_HANDLE,
   INSTAGRAM_URL,
+  TIKTOK_URL,
+  TIKTOK_HANDLE,
   PHONE_DISPLAY,
   PHONE_TEL,
   waLink,
 } from "../data/site";
-import { WaIcon, IgIcon } from "../components/Layout";
+import { GUIDES } from "../data/neighborhoods";
+import { LISTINGS, NEIGHBORHOODS } from "../data/listings";
+import { WaIcon, IgIcon, TikTokIcon } from "../components/Layout";
+
+function FeaturedListingCard({ listing, isHero = false }: { listing: any; isHero?: boolean }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [active, setActive] = useState(false);
+  const images = [listing?.cover, ...(listing?.gallery || [])].filter(Boolean);
+
+  useEffect(() => {
+    if (!active || images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, [active, images.length]);
+
+  return (
+    <div
+      className={`relative ${isHero ? 'aspect-[4/5] sm:aspect-[16/10]' : 'aspect-[4/5] lg:aspect-[16/10]'} overflow-hidden rounded-3xl bg-cream-2`}
+      onMouseEnter={() => setActive(true)}
+      onMouseLeave={() => { setActive(false); setCurrentIndex(0); }}
+    >
+      <img
+        src={images[currentIndex] || listing?.cover}
+        alt={listing?.title}
+        className="w-full h-full object-cover transition-all duration-500 ease-in-out group-hover:scale-[1.04]"
+      />
+      {images.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+          {images.map((_, idx) => (
+            <div
+              key={idx}
+              className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'bg-cream scale-125' : 'bg-cream/50 scale-100'}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function HomePage() {
+  const [listings, setListings] = useState<any[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      await appStore.init();
+      setListings(appStore.getListings());
+      setNeighborhoods(appStore.getNeighborhoods());
+    };
+    loadData();
+  }, []);
+
   return (
     <main className="overflow-x-clip">
-      <Hero />
+      <Hero listings={listings} />
       <TrustMarquee />
-      <FeaturedStays />
+      <FeaturedStays listings={listings} />
       <ParallaxQuote
-        image="/images/entrance-villa.jpg"
-        eyebrow="The doorway"
-        line={<>Every key opens onto <span className="italic gold-text">somewhere considered.</span></>}
-        sub="Stone paths, soft lighting, plants that have been watered. Small things, done right."
+        image="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=75"
+        eyebrow="Experience Nairobi"
+        line={<>Every stay creates <span className="italic gold-text">unforgettable memories.</span></>}
+        sub="From luxury apartments to cozy BnBs, discover the perfect Nairobi accommodation tailored to your needs."
       />
       <FounderBlock />
       <HowItWorks />
-      <NeighborhoodsStrip />
+      <NeighborhoodsStrip neighborhoods={neighborhoods} />
       <Testimonials />
       <ParallaxQuote
-        image="/images/nairobi-dusk.jpg"
-        eyebrow="The city"
-        line={<>Nairobi from the <span className="italic gold-text">right window.</span></>}
-        sub="Skylines, gardens, quiet courtyards. We pick the address — you pick the view."
+        image="https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=800&q=75"
+        eyebrow="Discover Kenya's Capital"
+        line={<>Nairobi from the <span className="italic gold-text">perfect perspective.</span></>}
+        sub="Explore vibrant neighborhoods, stunning landscapes, and world-class hospitality. We find the ideal location for your journey."
         align="right"
       />
       <InstagramStrip />
@@ -48,17 +103,19 @@ export function HomePage() {
 
 /* ————————————————————— HERO ————————————————————— */
 
-function Hero() {
-  const stack = LISTINGS.slice(0, 3);
+function Hero({ listings }: { listings: any[] }) {
+  const stack = listings.slice(0, 2);
+  if (stack.length === 0) return null;
   return (
     <section className="relative isolate bg-ink text-cream overflow-hidden grain">
       {/* Background image with rich layered gradients */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <img
-          src="/images/hero-building.jpg"
+          src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=75"
           alt="A curated Nairobi apartment building lit warmly at twilight"
           className="w-full h-full object-cover drift opacity-[0.62]"
           loading="eager"
+          fetchPriority="high"
         />
         {/* Warm spotlight + deep vignette + bottom fade to ink */}
         <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_70%_20%,rgba(229,207,160,0.22),transparent_55%)]" />
@@ -73,23 +130,21 @@ function Hero() {
 
       <div className="mx-auto max-w-6xl px-5 pt-10 sm:pt-16 pb-16 sm:pb-24 grid lg:grid-cols-12 gap-10 lg:gap-6 items-center">
         {/* Left: copy */}
-        <div className="lg:col-span-7 rise">
+        <div className="lg:col-span-7 rise reveal reveal-d1">
           <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.24em] text-cream/80 border border-cream/15 bg-cream/[0.04] backdrop-blur px-3 py-1.5 rounded-full">
             <span className="size-1.5 rounded-full bg-gold inline-block" />
-            Curated short stays · Nairobi
+            Premium Short-Stay Apartments in Nairobi
           </div>
 
           <h1 className="mt-6 font-serif font-light text-[40px] leading-[1.02] sm:text-[64px] lg:text-[78px] tracking-[-0.02em]">
-            An address
+            Your Perfect
             <br className="hidden sm:block" />{" "}
-            <span className="italic font-normal">worth</span>{" "}
-            <span className="gold-text not-italic">arriving at.</span>
+            <span className="italic font-normal">Nairobi</span>{" "}
+            <span className="gold-text not-italic">Stay Awaits.</span>
           </h1>
 
           <p className="mt-6 text-base sm:text-lg text-cream/75 max-w-xl leading-relaxed">
-            Handpicked apartments and BnBs from {FOUNDER}'s personal network.
-            Real video tours, verified hosts, booked the way Nairobi already
-            chats — over WhatsApp.
+            Discover handpicked vacation rentals, serviced apartments, and boutique BnBs in Nairobi's finest neighborhoods. Verified hosts, real video tours, and instant WhatsApp booking for your perfect stay.
           </p>
 
           <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -107,16 +162,16 @@ function Hero() {
               to="/stays"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-cream/25 text-cream hover:bg-cream/[0.06] transition text-[15px]"
             >
-              Browse the collection
+              View All Properties
             </Link>
           </div>
 
           {/* Stat strip */}
           <div className="mt-10 grid grid-cols-3 max-w-md gap-6">
             {[
-              { k: "4.9★", v: "Guest rating" },
-              { k: "400+", v: "Stays this year" },
-              { k: "24h", v: "WhatsApp reply" },
+              { k: "4.9★", v: "Average Rating" },
+              { k: "500+", v: "Happy Guests" },
+              { k: "24/7", v: "Support" },
             ].map((s) => (
               <div key={s.v}>
                 <div className="font-serif text-2xl text-cream">{s.k}</div>
@@ -129,19 +184,18 @@ function Hero() {
         </div>
 
         {/* Right: editorial card stack (hidden on small) */}
-        <div className="lg:col-span-5 relative h-[460px] hidden lg:block">
+        <div className="lg:col-span-5 relative h-[360px] hidden lg:block reveal reveal-scale">
           {stack.map((l, i) => {
             const positions = [
-              "top-0 right-0 w-[78%] rotate-[2.5deg] z-30",
-              "top-[42%] left-0 w-[62%] -rotate-[3deg] z-20",
-              "bottom-0 right-[8%] w-[58%] rotate-[1deg] z-10",
+              "top-0 right-0 w-[65%] rotate-[2deg] z-20",
+              "top-[35%] left-0 w-[65%] -rotate-[2deg] z-30",
             ];
-            const delay = ["", "rise-delay-1", "rise-delay-2"][i];
+            const delay = ["", "rise-delay-1"][i];
             return (
               <Link
                 key={l.slug}
                 to={`/stays/${l.slug}`}
-                className={`absolute ${positions[i]} rise ${delay} card-hover`}
+                className={`absolute ${positions[i]} rise ${delay} card-hover float-slow`}
               >
                 <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/40 ring-1 ring-cream/10">
                   <div className="relative aspect-[4/5]">
@@ -177,8 +231,48 @@ function Hero() {
         </div>
       </div>
 
+      {/* Mobile card stack - visible only on small screens */}
+      <div className="lg:hidden px-5 pb-6">
+        <div className="flex gap-3 overflow-x-auto pb-2 snap-x">
+          {stack.map((l, i) => (
+            <Link
+              key={l.slug}
+              to={`/stays/${l.slug}`}
+              className="flex-shrink-0 w-[72%] snap-center reveal reveal-scale"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            >
+              <div className="rounded-xl overflow-hidden shadow-xl shadow-black/30 ring-1 ring-cream/10">
+                <div className="relative aspect-[4/5]">
+                  <img
+                    src={l.cover}
+                    alt={l.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-transparent" />
+                  <div className="absolute top-2 left-2 inline-flex items-center gap-1 text-[9px] uppercase tracking-widest bg-cream/90 text-ink px-2 py-0.5 rounded-full">
+                    <span className="size-1 rounded-full bg-emerald inline-block" />
+                    Verified
+                  </div>
+                  <div className="absolute bottom-2 left-2 right-2 text-cream">
+                    <div className="text-[9px] uppercase tracking-widest text-cream/70">
+                      {l.neighborhood}
+                    </div>
+                    <div className="font-serif text-sm leading-tight mt-0.5">
+                      {l.title}
+                    </div>
+                    <div className="mt-0.5 text-xs text-cream/85">
+                      {fmtKES(l.pricePerNight)} <span className="text-cream/60">/ night</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
       {/* Floating glass quick-search */}
-      <div className="mx-auto max-w-6xl px-5 pb-10 sm:pb-16 -mt-4 sm:-mt-6 relative">
+      <div className="mx-auto max-w-6xl px-5 pb-10 sm:pb-16 -mt-4 sm:-mt-6 relative reveal reveal-d2">
         <QuickSearch />
       </div>
     </section>
@@ -203,11 +297,17 @@ function QuickSearch() {
         <select
           value={where}
           onChange={(e) => setWhere(e.target.value)}
-          className="bg-transparent w-full text-cream text-sm focus:outline-none [&>option]:text-ink"
+          className="bg-transparent w-full text-cream text-sm focus:outline-none [&>option]:text-ink appearance-none cursor-pointer pr-8"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FFB347'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 0.5rem center',
+            backgroundSize: '1rem'
+          }}
         >
           <option>Any neighborhood</option>
-          {NEIGHBORHOODS.map((n) => (
-            <option key={n}>{n}</option>
+          {GUIDES.map((g) => (
+            <option key={g.slug}>{g.name}</option>
           ))}
         </select>
       </Slot>
@@ -360,89 +460,133 @@ function TrustMarquee() {
 
 /* ————————————————————— FEATURED STAYS ————————————————————— */
 
-function FeaturedStays() {
-  const [hero, ...rest] = LISTINGS.slice(0, 5);
+function FeaturedStays({ listings }: { listings: any[] }) {
+  const stays = listings.slice(0, 6);
+  if (stays.length === 0 || !stays[0]?.slug) return null;
   return (
     <section className="mx-auto max-w-6xl px-5 mt-20 sm:mt-28">
       <SectionHead
-        eyebrow="The collection"
+        eyebrow="Premium Collection"
         title={
           <>
-            Featured stays, <span className="italic text-gold-dark">this season.</span>
+            Featured Nairobi <span className="italic text-gold-dark">Stays</span>
           </>
         }
-        sub="Fresh from the camera roll. Tap any one for the full video tour."
-        link={{ to: "/stays", label: "View all stays" }}
+        sub="Explore our handpicked selection of luxury apartments and vacation rentals in Nairobi's most sought-after neighborhoods."
+        link={{ to: "/stays", label: "View All Properties" }}
       />
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-12">
-        {/* Hero card */}
-        <Link
-          to={`/stays/${hero.slug}`}
-          className="lg:col-span-7 group block reveal reveal-d1"
-        >
-          <div className="relative aspect-[4/5] sm:aspect-[16/11] overflow-hidden rounded-3xl bg-cream-2">
-            <img
-              src={hero.cover}
-              alt={hero.title}
-              className="w-full h-full object-cover transition duration-700 group-hover:scale-[1.04]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/10 to-transparent" />
-            <Badge>Editor's pick</Badge>
-            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 text-cream">
-              <div className="text-[11px] uppercase tracking-widest text-cream/75">
-                {hero.neighborhood}
-              </div>
-              <div className="mt-1 font-serif text-3xl sm:text-4xl leading-tight">
-                {hero.title}
-              </div>
-              <div className="mt-1.5 text-cream/85 max-w-md">{hero.shortPitch}</div>
-              <div className="mt-4 flex items-end justify-between">
-                <div className="text-sm">
-                  <span className="font-medium">{fmtKES(hero.pricePerNight)}</span>
-                  <span className="text-cream/65"> / night</span>
-                </div>
-                <span className="text-xs uppercase tracking-widest underline-offset-4 group-hover:underline">
-                  Watch tour →
-                </span>
-              </div>
-            </div>
-          </div>
-        </Link>
-
-        {/* Side stack */}
-        <div className="lg:col-span-5 grid sm:grid-cols-2 lg:grid-cols-1 gap-6">
-          {rest.slice(0, 2).map((l, idx) => (
+      {/* Mobile: Horizontal scroll carousel */}
+      <div className="mt-10 sm:hidden">
+        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 -mx-5 px-5 scrollbar-hide">
+          {stays.map((l, idx) => (
             <Link
               key={l.slug}
               to={`/stays/${l.slug}`}
-              className={`group block reveal ${idx === 0 ? "reveal-d2" : "reveal-d3"}`}
+              className="flex-shrink-0 w-[85vw] snap-start group block relative"
             >
-              <div className="relative aspect-[4/5] lg:aspect-[16/11] overflow-hidden rounded-3xl bg-cream-2">
-                <img
-                  src={l.cover}
-                  alt={l.title}
-                  className="w-full h-full object-cover transition duration-700 group-hover:scale-[1.05]"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-ink/75 via-transparent" />
-                <Badge>Verified</Badge>
-                <div className="absolute bottom-0 left-0 right-0 p-5 text-cream">
-                  <div className="text-[10px] uppercase tracking-widest text-cream/75">
-                    {l.neighborhood}
-                  </div>
-                  <div className="mt-1 font-serif text-xl leading-tight">{l.title}</div>
-                  <div className="mt-2 flex items-end justify-between text-sm">
-                    <span>
-                      <span className="font-medium">{fmtKES(l.pricePerNight)}</span>
-                      <span className="text-cream/60"> / night</span>
-                    </span>
-                    <span className="text-xs">★ {l.rating}</span>
-                  </div>
+              <div className="relative w-full aspect-[4/5] overflow-hidden rounded-2xl transition-transform duration-500 ease-out group-hover:scale-[1.02]">
+                <FeaturedListingCard listing={l} />
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/75 via-ink/20 to-transparent pointer-events-none rounded-2xl transition-opacity duration-300 group-hover:from-ink/85" />
+              {idx === 0 && <Badge>Editor's pick</Badge>}
+              {idx > 0 && l.verified && <Badge>Verified</Badge>}
+              <div className="absolute bottom-0 left-0 right-0 p-4 text-cream pointer-events-none">
+                <div className="text-[10px] uppercase tracking-widest text-cream/75">
+                  {l.neighborhood}
+                </div>
+                <div className="mt-1 font-serif text-lg leading-tight">{l.title}</div>
+                {idx === 0 && (
+                  <div className="mt-1 text-cream/85 text-sm">{l.shortPitch || ''}</div>
+                )}
+                <div className="mt-2 flex items-end justify-between text-xs">
+                  <span>
+                    <span className="font-medium">{fmtKES(l.pricePerNight)}</span>
+                    <span className="text-cream/60"> / night</span>
+                  </span>
+                  <span className="text-xs">★ {l.rating}</span>
                 </div>
               </div>
             </Link>
           ))}
         </div>
+        {/* Carousel indicators */}
+        <div className="flex justify-center gap-2 mt-2">
+          {stays.map((_, idx) => (
+            <div
+              key={idx}
+              className="w-2 h-2 rounded-full bg-cream/30"
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Tablet: 2-column grid with hero */}
+      <div className="mt-10 hidden sm:grid lg:hidden gap-5 sm:grid-cols-2">
+        {stays.map((l, idx) => (
+          <Link
+            key={l.slug}
+            to={`/stays/${l.slug}`}
+            className={`group block relative ${idx === 0 ? 'sm:col-span-2' : ''}`}
+          >
+            <div className="relative w-full aspect-[4/5] sm:aspect-[16/10] overflow-hidden rounded-2xl transition-transform duration-500 ease-out group-hover:scale-[1.02]">
+              <FeaturedListingCard listing={l} />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-ink/75 via-ink/20 to-transparent pointer-events-none rounded-2xl transition-opacity duration-300 group-hover:from-ink/85" />
+            {idx === 0 && <Badge>Editor's pick</Badge>}
+            {idx > 0 && l.verified && <Badge>Verified</Badge>}
+            <div className="absolute bottom-0 left-0 right-0 p-4 text-cream pointer-events-none">
+              <div className="text-[10px] uppercase tracking-widest text-cream/75">
+                {l.neighborhood}
+              </div>
+              <div className="mt-1 font-serif text-lg sm:text-xl leading-tight">{l.title}</div>
+              {idx === 0 && (
+                <div className="mt-1 text-cream/85 text-sm max-w-md">{l.shortPitch || ''}</div>
+              )}
+              <div className="mt-2 flex items-end justify-between text-xs">
+                <span>
+                  <span className="font-medium">{fmtKES(l.pricePerNight)}</span>
+                  <span className="text-cream/60"> / night</span>
+                </span>
+                <span className="text-xs">★ {l.rating}</span>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Desktop: Masonry grid */}
+      <div className="mt-10 hidden lg:grid gap-5 lg:grid-cols-3 auto-rows-[300px]">
+        {stays.map((l, idx) => (
+          <Link
+            key={l.slug}
+            to={`/stays/${l.slug}`}
+            className={`group block relative ${idx === 0 ? 'lg:col-span-2 lg:row-span-2' : ''}`}
+          >
+            <div className="relative w-full h-full overflow-hidden rounded-3xl transition-transform duration-500 ease-out group-hover:scale-[1.02]">
+              <FeaturedListingCard listing={l} />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-ink/75 via-ink/20 to-transparent pointer-events-none rounded-3xl transition-opacity duration-300 group-hover:from-ink/85" />
+            {idx === 0 && <Badge>Editor's pick</Badge>}
+            {idx > 0 && l.verified && <Badge>Verified</Badge>}
+            <div className="absolute bottom-0 left-0 right-0 p-4 text-cream pointer-events-none transition-transform duration-300 group-hover:translate-y-[-2px]">
+              <div className="text-[10px] uppercase tracking-widest text-cream/75">
+                {l.neighborhood}
+              </div>
+              <div className="mt-1 font-serif text-lg sm:text-xl leading-tight">{l.title}</div>
+              {idx === 0 && (
+                <div className="mt-1 text-cream/85 text-sm max-w-md">{l.shortPitch || ''}</div>
+              )}
+              <div className="mt-2 flex items-end justify-between text-xs">
+                <span>
+                  <span className="font-medium">{fmtKES(l.pricePerNight)}</span>
+                  <span className="text-cream/60"> / night</span>
+                </span>
+                <span className="text-xs">★ {l.rating}</span>
+              </div>
+            </div>
+          </Link>
+        ))}
       </div>
     </section>
   );
@@ -462,45 +606,43 @@ function Badge({ children }: { children: React.ReactNode }) {
 function FounderBlock() {
   return (
     <section className="mx-auto max-w-6xl px-5 mt-20 sm:mt-28">
-      <div className="rounded-3xl bg-ink text-cream overflow-hidden grid lg:grid-cols-12 relative reveal reveal-scale">
+      <div className="rounded-3xl bg-ink text-cream overflow-hidden grid lg:grid-cols-12 relative">
         <div className="lg:col-span-5 relative h-72 sm:h-96 lg:h-auto min-h-[360px] overflow-hidden">
           <img
-            src="/images/interior-warm.jpg"
-            alt={`Inside one of ${FOUNDER}'s curated Nairobi stays`}
+            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=75"
+            alt="Ivy, founder of Nairobi Spaces"
             className="w-full h-full object-cover drift"
             loading="lazy"
+            decoding="async"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-ink/10 to-ink/70 lg:to-ink/0" />
           {/* Floating gold caption chip */}
           <div className="absolute bottom-5 left-5 inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-cream/90 bg-ink/55 backdrop-blur px-3 py-1.5 rounded-full border border-cream/15">
             <span className="size-1 rounded-full bg-gold inline-block" />
-            Inside a recent stay · Kilimani
+            Founder & Curator
           </div>
         </div>
         <div className="lg:col-span-7 p-8 sm:p-12 lg:p-16 flex flex-col justify-center">
           <div className="text-[10px] uppercase tracking-[0.24em] text-gold/90">
-            The curator
+            Meet the Founder
           </div>
           <h3 className="mt-4 font-serif text-3xl sm:text-4xl lg:text-[44px] leading-[1.05]">
-            "I only list places I'd put my own family in."
+            "Curated with care. Verified with pride."
           </h3>
           <p className="mt-5 text-cream/70 max-w-lg leading-relaxed">
-            Hi, I'm {FOUNDER}. For the last few years I've been quietly building
-            a network of Nairobi's best apartment owners and BnB hosts — the
-            ones who answer their phone, keep their Wi‑Fi fast, and don't cut
-            corners. Every stay on this site, I've walked through myself.
+            Welcome to Nairobi Spaces. I personally inspect every property to ensure it meets our standards of quality, comfort, and hospitality. Working directly with homeowners who share our commitment to exceptional guest experiences, I remain personally available to assist with any questions about your Nairobi stay.
           </p>
           <div className="mt-7 hr-gold text-cream/30">
             <span className="text-[10px] uppercase tracking-[0.22em] text-cream/55 whitespace-nowrap">
-              Reach me directly
+              Contact Directly
             </span>
           </div>
-          <div className="mt-5 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-col sm:flex-row gap-3">
             <a
               href={waLink(`Hi ${FOUNDER}! Found you via the website.`)}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-full btn-gold text-sm font-medium"
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full border border-cream/25 hover:border-gold hover:text-gold text-sm transition duration-300 whitespace-nowrap"
             >
               <WaIcon className="size-4" /> WhatsApp {FOUNDER}
             </a>
@@ -508,9 +650,17 @@ function FounderBlock() {
               href={INSTAGRAM_URL}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-full border border-cream/25 hover:bg-cream/[0.06] text-sm"
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full border border-cream/25 hover:border-gold hover:text-gold text-sm transition duration-300 whitespace-nowrap"
             >
               <IgIcon className="size-4" /> {INSTAGRAM_HANDLE}
+            </a>
+            <a
+              href={TIKTOK_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-full border border-cream/25 hover:border-gold hover:text-gold text-sm transition duration-300 whitespace-nowrap"
+            >
+              <TikTokIcon className="size-4" /> {TIKTOK_HANDLE}
             </a>
           </div>
         </div>
@@ -523,25 +673,29 @@ function FounderBlock() {
 
 function HowItWorks() {
   const steps = [
-    { n: "01", t: "Tell us what you want", d: "Dates, guests, vibe. WhatsApp or the form below — whichever's easier." },
-    { n: "02", t: "We send 2–3 picks", d: "Real photos, real video tours, real prices. No noise, no upsell." },
-    { n: "03", t: "Pay, check in, relax", d: "Pay via M‑Pesa or card where available. We're on call your whole stay." },
+    { n: "01", t: "Share Your Requirements", d: "Tell us your dates, guest count, and preferred neighborhood via WhatsApp or our inquiry form." },
+    { n: "02", t: "Receive Curated Options", d: "We'll send 2-3 personalized property recommendations with real photos, video tours, and transparent pricing." },
+    { n: "03", t: "Book & Check In", d: "Secure your booking via M-Pesa or card. We provide 24/7 support throughout your entire stay." },
   ];
   return (
-    <section className="mx-auto max-w-6xl px-5 mt-20 sm:mt-28">
+    <section className="mx-auto max-w-6xl px-5 mt-20 sm:mt-28 mb-20 sm:mb-28">
       <SectionHead
-        eyebrow="How it works"
-        title={<>From DM to keys, <span className="italic text-gold-dark">in three steps.</span></>}
+        eyebrow="Booking Process"
+        title={<>Book Your Nairobi Stay in <span className="italic text-gold-dark">Three Easy Steps</span></>}
       />
-      <div className="mt-10 grid gap-px bg-line rounded-3xl overflow-hidden border border-line sm:grid-cols-3">
+      <div className="mt-10 grid gap-6 sm:gap-8 sm:grid-cols-3">
         {steps.map((s, i) => (
-          <div key={s.n} className={`bg-cream p-7 sm:p-8 reveal reveal-d${i + 1}`}>
-            <div className="flex items-center gap-3">
-              <span className="num-eyebrow text-gold-dark text-3xl">{s.n}</span>
-              <span className="h-px flex-1 bg-line" />
+          <div key={s.n} className={`group relative bg-cream rounded-2xl p-6 sm:p-8 border border-line hover:border-gold/50 hover:shadow-lg hover:shadow-gold/5 transition-all duration-300 reveal reveal-d${i + 1}`}>
+            <div className="absolute top-6 right-6 text-6xl font-serif text-gold/10 group-hover:text-gold/20 transition-colors duration-300">
+              {s.n}
             </div>
-            <div className="mt-5 font-serif text-xl">{s.t}</div>
-            <div className="mt-2 text-sm text-ink-2 leading-relaxed">{s.d}</div>
+            <div className="relative">
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gold/10 text-gold mb-4 group-hover:bg-gold group-hover:text-ink transition-colors duration-300">
+                <span className="font-serif text-lg font-medium">{i + 1}</span>
+              </div>
+              <h3 className="font-serif text-xl sm:text-2xl leading-tight">{s.t}</h3>
+              <p className="mt-3 text-sm text-ink-2 leading-relaxed">{s.d}</p>
+            </div>
           </div>
         ))}
       </div>
@@ -551,42 +705,48 @@ function HowItWorks() {
 
 /* ————————————————————— NEIGHBORHOODS ————————————————————— */
 
-function NeighborhoodsStrip() {
+function NeighborhoodsStrip({ neighborhoods }: { neighborhoods: any[] }) {
   return (
-    <section className="mx-auto max-w-6xl px-5 mt-20 sm:mt-28">
-      <SectionHead
-        eyebrow="Where to stay"
-        title={<>Pick a neighborhood, <span className="italic text-gold-dark">not a hotel.</span></>}
-        link={{ to: "/neighborhoods", label: "All guides" }}
-      />
-      <div className="mt-10 -mx-5 px-5 flex gap-4 overflow-x-auto no-scrollbar snap-x snap-mandatory">
-        {GUIDES.map((g, i) => (
+    <section className="py-12 sm:py-16 bg-[var(--color-cream-2)]">
+      <div className="mx-auto max-w-6xl px-5">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="font-serif text-2xl sm:text-3xl">Explore Nairobi Neighborhoods</h2>
           <Link
-            key={g.slug}
-            to={`/neighborhoods/${g.slug}`}
-            className={`snap-start shrink-0 w-[78%] sm:w-[42%] lg:w-[28%] group reveal reveal-d${(i % 4) + 1}`}
+            to="/neighborhoods"
+            className="text-sm font-medium text-[var(--color-ink)] hover:text-[var(--color-gold)] transition-colors"
           >
-            <div className="relative aspect-[3/4] rounded-2xl overflow-hidden">
-              <img
-                src={g.cover}
-                alt={`${g.name} guide cover`}
-                className="w-full h-full object-cover transition group-hover:scale-105 duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/20 to-transparent" />
-              <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-cream/85">
-                <span className="size-1 rounded-full bg-gold inline-block" />
-                Nairobi
-              </div>
-              <div className="absolute bottom-0 p-5 text-cream">
-                <div className="font-serif text-2xl leading-tight">{g.name}</div>
-                <div className="mt-1 text-sm text-cream/80">{g.tagline}</div>
-                <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-gold">
-                  Read guide →
+            View all {neighborhoods.length} →
+          </Link>
+        </div>
+        <div className="flex gap-4 overflow-x-auto pb-4 snap-x">
+          {neighborhoods.map((n) => (
+            <Link
+              key={n.slug}
+              to={`/neighborhoods/${n.slug}`}
+              className="snap-start shrink-0 w-[78%] sm:w-[42%] lg:w-[28%] group reveal reveal-d1"
+            >
+              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden">
+                <img
+                  src={n.cover}
+                  alt={`${n.name} guide cover`}
+                  className="w-full h-full object-cover transition group-hover:scale-105 duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/20 to-transparent" />
+                <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-cream/85">
+                  <span className="size-1 rounded-full bg-gold inline-block" />
+                  Nairobi
+                </div>
+                <div className="absolute bottom-0 p-5 text-cream">
+                  <div className="font-serif text-2xl leading-tight">{n.name}</div>
+                  <div className="mt-1 text-sm text-cream/80">{n.tagline}</div>
+                  <div className="mt-3 inline-flex items-center gap-1.5 text-[11px] uppercase tracking-widest text-gold">
+                    Read guide →
+                  </div>
                 </div>
               </div>
-            </div>
-          </Link>
-        ))}
+            </Link>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -596,15 +756,15 @@ function NeighborhoodsStrip() {
 
 function Testimonials() {
   const t = [
-    { q: "Felt like a friend with great taste planned my whole trip. The Westlands loft was even better than the reel.", a: "Achieng'", tag: "London · Diaspora" },
-    { q: "We booked the Karen cottage for our anniversary. Firewood, breakfast, zero stress. We'll be back.", a: "Daniel & Mercy", tag: "Nairobi · Couples" },
-    { q: "I shoot brand content in Nairobi twice a year. This is the only person I message now.", a: "Liam", tag: "Cape Town · Creators" },
+    { q: "The Westlands apartment exceeded all expectations. Perfect location, beautifully furnished, and the WhatsApp booking process was seamless. Highly recommend for anyone visiting Nairobi.", a: "Achieng'", tag: "London · Business Traveler" },
+    { q: "We booked the Karen cottage for our anniversary and it was magical. The property was immaculate, the host was responsive, and every detail was thoughtfully arranged.", a: "Daniel & Mercy", tag: "Nairobi · Couples" },
+    { q: "As a frequent visitor to Nairobi for work, I've tried many accommodations. Nairobi Spaces consistently delivers the best quality and service. My go-to for every trip.", a: "Liam", tag: "Cape Town · Regular Guest" },
   ];
   return (
     <section className="mx-auto max-w-6xl px-5 mt-20 sm:mt-28">
       <SectionHead
-        eyebrow="Guests"
-        title={<>What people <span className="italic text-gold-dark">DM us after.</span></>}
+        eyebrow="Guest Reviews"
+        title={<>What Our Guests <span className="italic text-gold-dark">Say About Us</span></>}
       />
       <div className="mt-10 grid gap-5 md:grid-cols-3">
         {t.map((x, i) => (
@@ -637,11 +797,19 @@ function InstagramStrip() {
   return (
     <section className="mx-auto max-w-6xl px-5 mt-20 sm:mt-28">
       <SectionHead
-        eyebrow="The feed"
-        title={<>See it before <span className="italic text-gold-dark">you book.</span></>}
-        sub={`Every stay starts as a reel on ${INSTAGRAM_HANDLE}.`}
+        eyebrow="Social Media"
+        title={<>See Our Properties <span className="italic text-gold-dark">On Video</span></>}
+        sub={`Follow ${INSTAGRAM_HANDLE} and ${TIKTOK_HANDLE} for exclusive video tours of our Nairobi apartments and vacation rentals.`}
         link={{ to: INSTAGRAM_URL, label: "Follow on Instagram", external: true }}
       />
+      <div className="mt-6 flex gap-3">
+        <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full border border-line text-ink hover:bg-cream-2 transition">
+          <IgIcon className="size-4" /> Instagram
+        </a>
+        <a href={TIKTOK_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full border border-line text-ink hover:bg-cream-2 transition">
+          <TikTokIcon className="size-4" /> TikTok
+        </a>
+      </div>
       <div className="mt-10 grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3">
         {[...LISTINGS, ...LISTINGS].slice(0, 6).map((l, i) => (
           <a
@@ -680,15 +848,13 @@ function OwnersBanner() {
         <div className="absolute right-1/3 -bottom-16 size-48 rounded-full bg-gold/10 blur-3xl pointer-events-none" />
         <div className="relative">
           <div className="text-[10px] uppercase tracking-[0.24em] text-gold">
-            For owners
+            Property Owners
           </div>
           <h3 className="mt-4 font-serif text-3xl sm:text-4xl lg:text-[42px] leading-[1.05]">
-            Have a place worth showing? <span className="gold-text">Let's put it on camera.</span>
+            List Your Nairobi Property <span className="gold-text">With Us</span>
           </h3>
           <p className="mt-4 text-cream/80 max-w-md leading-relaxed">
-            We promote a small, curated set of Nairobi properties. If yours
-            fits, you'll get real photography, a reel, and a steady pipeline of
-            well‑screened guests.
+            We showcase a curated selection of premium Nairobi properties. Join our platform to receive professional photography, video content, and access to quality guests seeking exceptional stays.
           </p>
         </div>
         <div className="relative flex flex-wrap gap-3 md:justify-end">
@@ -696,7 +862,7 @@ function OwnersBanner() {
             to="/owners"
             className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full btn-gold text-sm font-medium"
           >
-            List your property →
+            List Your Property →
           </Link>
           <a
             href={`tel:${PHONE_TEL}`}
@@ -875,7 +1041,13 @@ export function InquiryForm({ compact = false }: { compact?: boolean }) {
                 onChange={(e) =>
                   setForm({ ...form, neighborhood: e.target.value })
                 }
-                className="ip"
+                className="ip appearance-none cursor-pointer pr-8"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FFB347'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundSize: '1rem'
+                }}
               >
                 <option>Any</option>
                 {NEIGHBORHOODS.map((n) => (
