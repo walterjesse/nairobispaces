@@ -1,12 +1,21 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, navigate } from "../router";
 import { LISTINGS } from "../data/listings";
 import { BRAND, PHONE_DISPLAY, fmtKES, fmtUSD, waLink } from "../data/site";
 import { WaIcon } from "../components/Layout";
+import { normalizeListing } from "../lib/supabase";
 
 export function ListingPage({ slug }: { slug: string }) {
-  const l = LISTINGS.find((x) => x.slug === slug);
+  const [listing, setListing] = useState<any>(null);
   const [activeImg, setActiveImg] = useState(0);
+
+  useEffect(() => {
+    // Always use local mock data for now
+    const local = LISTINGS.find((x) => x.slug === slug);
+    setListing(local ? normalizeListing(local) : null);
+  }, [slug]);
+
+  const l = listing;
 
   if (!l) {
     return (
@@ -20,7 +29,7 @@ export function ListingPage({ slug }: { slug: string }) {
     );
   }
 
-  const images = [l.cover, ...l.gallery];
+  const images = [l.cover, ...(l.gallery || [])].filter(Boolean);
   const bookMsg = `Hi ${BRAND}! I'd like to book "${l.title}" in ${l.neighborhood}.`;
 
   return (
@@ -38,7 +47,7 @@ export function ListingPage({ slug }: { slug: string }) {
         <div className="mt-4 grid gap-3 lg:grid-cols-5">
           <div className="lg:col-span-3">
             <div className="relative aspect-[4/3] sm:aspect-[16/10] rounded-2xl overflow-hidden bg-cream-2">
-              <img src={images[activeImg]} alt={`${l.title} photo ${activeImg + 1}`} className="w-full h-full object-cover" />
+              <img src={images[activeImg] || l.cover} alt={`${l.title} photo ${activeImg + 1}`} className="w-full h-full object-cover" />
               {/* Play button to suggest video */}
               <button
                 onClick={() => alert("Video tour: paste your Reel/YouTube embed here.")}
@@ -70,8 +79,8 @@ export function ListingPage({ slug }: { slug: string }) {
               <div className="mt-1 text-sm text-ink-2">★ {l.rating} · {l.reviews} stays · {l.verified && "✓ Verified by " + BRAND}</div>
 
               <div className="mt-5 flex items-end gap-2">
-                <div className="font-serif text-3xl">{fmtKES(l.pricePerNight)}</div>
-                <div className="text-mute mb-1">/ night · ~{fmtUSD(l.pricePerNight)}</div>
+                <div className="font-serif text-3xl">{fmtKES(l.pricePerNight ?? l.price_per_night ?? 0)}</div>
+                <div className="text-mute mb-1">/ night · ~{fmtUSD(l.pricePerNight ?? l.price_per_night ?? 0)}</div>
               </div>
 
               <div className="mt-5 grid gap-2">
@@ -141,7 +150,7 @@ export function ListingPage({ slug }: { slug: string }) {
           <div>
             <h2 className="font-serif text-2xl">What's inside</h2>
             <ul className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm text-ink-2">
-              {l.amenities.map((a) => (
+              {(l.amenities || []).map((a: string) => (
                 <li key={a} className="flex items-center gap-2">
                   <span className="size-1.5 rounded-full bg-gold" /> {a}
                 </li>
@@ -151,7 +160,7 @@ export function ListingPage({ slug }: { slug: string }) {
 
           <div>
             <h2 className="font-serif text-2xl">The area</h2>
-            <p className="mt-3 text-ink-2 leading-relaxed">{l.areaNotes}</p>
+            <p className="mt-3 text-ink-2 leading-relaxed">{l.areaNotes || l.area_notes || ''}</p>
             <p className="mt-2 text-xs text-mute">Exact address shared after booking confirmation.</p>
           </div>
 
@@ -159,12 +168,12 @@ export function ListingPage({ slug }: { slug: string }) {
             <div>
               <h2 className="font-serif text-2xl">House rules</h2>
               <ul className="mt-3 space-y-2 text-sm text-ink-2">
-                {l.rules.map((r) => <li key={r}>• {r}</li>)}
+                {(l.rules || []).map((r: string) => <li key={r}>• {r}</li>)}
               </ul>
             </div>
             <div>
               <h2 className="font-serif text-2xl">Check‑in</h2>
-              <p className="mt-3 text-sm text-ink-2">{l.checkIn}</p>
+              <p className="mt-3 text-sm text-ink-2">{l.checkIn || l.check_in || ''}</p>
             </div>
           </div>
         </div>

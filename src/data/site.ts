@@ -12,11 +12,13 @@ export const EMAIL = "stay@nairobispaces.co.ke";
 
 export const KES_PER_USD = 129; // approx — display only
 
-export function fmtKES(n: number) {
-  return "KES " + n.toLocaleString("en-KE");
+export function fmtKES(n: number | null | undefined) {
+  const num = typeof n === "number" && isFinite(n) ? n : 0;
+  return "KES " + num.toLocaleString("en-KE");
 }
-export function fmtUSD(n: number) {
-  return "$" + Math.round(n / KES_PER_USD).toLocaleString("en-US");
+export function fmtUSD(n: number | null | undefined) {
+  const num = typeof n === "number" && isFinite(n) ? n : 0;
+  return "$" + Math.round(num / KES_PER_USD).toLocaleString("en-US");
 }
 
 export function waLink(message: string) {

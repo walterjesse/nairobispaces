@@ -13,6 +13,12 @@ export function AdminLoginPage() {
     setLoading(true);
     setError(null);
 
+    if (!supabase) {
+      setError("Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your environment variables.");
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -33,6 +39,12 @@ export function AdminLoginPage() {
           Admin Login
         </h1>
         <p className="text-stone-600 mb-6">Sign in to manage listings</p>
+
+        {!supabase && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            Supabase is not configured. Please add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to your .env file.
+          </div>
+        )}
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">

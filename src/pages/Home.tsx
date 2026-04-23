@@ -15,6 +15,7 @@ import {
 import { GUIDES } from "../data/neighborhoods";
 import { LISTINGS, NEIGHBORHOODS } from "../data/listings";
 import { WaIcon, IgIcon, TikTokIcon } from "../components/Layout";
+import { supabase, normalizeListings } from "../lib/supabase";
 
 function FeaturedListingCard({ listing, isHero = false }: { listing: any; isHero?: boolean }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -61,8 +62,9 @@ export function HomePage() {
   const [neighborhoods, setNeighborhoods] = useState<any[]>([]);
 
   useEffect(() => {
-    setListings([...LISTINGS]);
-    setNeighborhoods([...NEIGHBORHOODS]);
+    // Always use local mock data for now
+    setListings(normalizeListings([...LISTINGS]));
+    setNeighborhoods([...GUIDES]);
   }, []);
 
   return (

@@ -24,69 +24,46 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-## 4. Create Database Tables
+## 4. Create Database Tables & Seed Mock Data
 
-Go to SQL Editor → New query, paste and run:
+SQL migrations are committed to the repo under `supabase/migrations/`.
+
+### 4a. Schema
+
+1. Open the Supabase SQL Editor → New query.
+2. Paste the **entire contents** of `supabase/migrations/001_schema.sql` and run.
+   This creates the `listings`, `neighborhoods`, and `admin_users` tables plus
+   Row-Level Security policies (public read, admin write).
+
+### 4b. Seed with the mock data
+
+1. New query → paste the contents of `supabase/migrations/002_seed.sql` and run.
+2. This inserts the 6 neighborhood guides and 3 sample listings used by the UI
+   fallback (Westlands, Kilimani, Riverside, etc.). The script uses
+   `ON CONFLICT (slug) DO UPDATE`, so it is **idempotent** — safe to re-run to
+   refresh records after tweaking the seed file.
+
+Verify with:
 
 ```sql
--- Listings table
-CREATE TABLE listings (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  slug TEXT UNIQUE NOT NULL,
-  title TEXT NOT NULL,
-  neighborhood TEXT NOT NULL,
-  price_per_night INTEGER NOT NULL DEFAULT 0,
-  bedrooms INTEGER DEFAULT 1,
-  beds INTEGER DEFAULT 1,
-  baths INTEGER DEFAULT 1,
-  max_guests INTEGER DEFAULT 2,
-  perfect_for TEXT[] DEFAULT '{}',
-  amenities TEXT[] DEFAULT '{}',
-  cover TEXT,
-  gallery TEXT[] DEFAULT '{}',
-  video_poster TEXT,
-  short_pitch TEXT,
-  description TEXT,
-  area_notes TEXT,
-  rules TEXT[] DEFAULT '{}',
-  check_in TEXT,
-  rating NUMERIC DEFAULT 5.0,
-  reviews INTEGER DEFAULT 0,
-  verified BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Admin users table
-CREATE TABLE admin_users (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  email TEXT UNIQUE NOT NULL,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Enable RLS on listings
-ALTER TABLE listings ENABLE ROW LEVEL SECURITY;
-
--- Policy: Allow read for everyone
-CREATE POLICY "Listings are viewable by everyone"
-  ON listings FOR SELECT USING (TRUE);
-
--- Policy: Allow write only for authenticated admins
-CREATE POLICY "Only admins can modify listings"
-  ON listings FOR ALL USING (
-    auth.uid() IN (SELECT user_id FROM admin_users)
-  );
-
--- Enable RLS on admin_users
-ALTER TABLE admin_users ENABLE ROW LEVEL SECURITY;
-
--- Policy: Admins can read admin_users
-CREATE POLICY "Admins can view admin_users"
-  ON admin_users FOR SELECT USING (
-    auth.uid() IN (SELECT user_id FROM admin_users)
-  );
+SELECT COUNT(*) FROM listings;        -- expect 3
+SELECT COUNT(*) FROM neighborhoods;   -- expect 6
 ```
+
+### 4c. Alternative: seed from Node
+
+If you prefer to keep data synced from the TypeScript source, run:
+
+```bash
+# one-off install (dev only)
+npm install --save-dev dotenv tsx
+
+# requires .env.local with VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
+npx tsx scripts/seed-supabase.ts
+```
+
+> ⚠️ The Node seeder requires the **service role key** (not the anon key) since
+> the tables are RLS-protected. Never commit the service role key.
 
 ## 5. Create Admin User
 

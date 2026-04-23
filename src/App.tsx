@@ -7,7 +7,7 @@ import { ListingPage } from "./pages/Listing";
 import { OwnersPage } from "./pages/Owners";
 import { NeighborhoodsIndex, NeighborhoodPage } from "./pages/Neighborhoods";
 import { QuizPage } from "./pages/Quiz";
-import { AdminLoginPage, AdminDashboardPage, AdminListingFormPage } from "./pages/Admin";
+import { AdminLoginPage, AdminDashboardPage, AdminListingFormPage, AdminNeighborhoodsPage } from "./pages/Admin";
 
 export default function App() {
   const route = useHashRoute();
@@ -25,13 +25,16 @@ export default function App() {
   else if (r.name === "admin-login") page = <AdminLoginPage />;
   else if (r.name === "admin") page = <AdminDashboardPage />;
   else if (r.name === "admin-new" || r.name === "admin-edit") page = <AdminListingFormPage />;
+  else if (r.name === "admin-neighborhoods") page = <AdminNeighborhoodsPage />;
+
+  const isAdminRoute = r.name.startsWith("admin");
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
+      {!isAdminRoute && <Header />}
       <div className="flex-1">{page}</div>
-      <Footer />
-      <StickyWhatsApp />
+      {!isAdminRoute && <Footer />}
+      {!isAdminRoute && <StickyWhatsApp />}
     </div>
   );
 }

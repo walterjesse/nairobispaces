@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "../router";
 import { LISTINGS } from "../data/listings";
 import { fmtKES, fmtUSD } from "../data/site";
+import { normalizeListings } from "../lib/supabase";
 
 function ListingCard({ listing }: { listing: any }) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -61,39 +62,38 @@ export function StaysPage() {
   const [allTags, setAllTags] = useState<string[]>([]);
   const [allAmenities, setAllAmenities] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [gridView, setGridView] = useState<"single" | "double" | "horizontal">("double");
 
   useEffect(() => {
-    const loadData = () => {
-      setListings(LISTINGS);
-      setLoading(false);
+    // Always use local mock data for now
+    const loaded = normalizeListings(LISTINGS as any);
+    setListings(loaded);
+    setLoading(false);
 
-      // Extract unique neighborhoods
-      const uniqueNeighborhoods = [...new Set(LISTINGS.map((l: any) => l.neighborhood))];
-      setNeighborhoods(["All", ...uniqueNeighborhoods]);
+    // Extract unique neighborhoods
+    const uniqueNeighborhoods = [...new Set(loaded.map((l: any) => l.neighborhood).filter(Boolean))];
+    setNeighborhoods(["All", ...uniqueNeighborhoods]);
 
-      // Extract unique tags
-      const uniqueTags = [...new Set(LISTINGS.flatMap((l: any) => l.perfectFor || []))];
-      setAllTags(["All", ...uniqueTags]);
+    // Extract unique tags
+    const uniqueTags = [...new Set(loaded.flatMap((l: any) => l.perfectFor || []))];
+    setAllTags(["All", ...uniqueTags]);
 
-      // Extract unique amenities
-      const uniqueAmenities = [...new Set(LISTINGS.flatMap((l: any) => l.amenities || []))];
-      setAllAmenities(["All", ...uniqueAmenities]);
-    };
-    loadData();
+    // Extract unique amenities
+    const uniqueAmenities = [...new Set(loaded.flatMap((l: any) => l.amenities || []))];
+    setAllAmenities(["All", ...uniqueAmenities]);
   }, []);
 
   const results = useMemo(() => {
-    if (nbhd === "All" && beds === 0 && tag === "All" && amenity === "All") {
-      return listings;
-    }
     return listings.filter((l) => {
       if (nbhd !== "All" && l.neighborhood !== nbhd) return false;
       if (beds > 0 && (l.bedrooms || 0) < beds) return false;
       if (tag !== "All" && !(l.perfectFor || []).includes(tag)) return false;
       if (amenity !== "All" && !(l.amenities || []).includes(amenity)) return false;
+      const price = l.pricePerNight ?? l.price_per_night ?? 0;
+      if (price > maxPrice) return false;
       return true;
     });
-  }, [listings, nbhd, beds, tag, amenity]);
+  }, [listings, nbhd, beds, tag, amenity, maxPrice]);
 
   return (
     <main className="mx-auto max-w-6xl px-5 pt-10 pb-16">
@@ -145,34 +145,81 @@ export function StaysPage() {
               </div>
             </div>
 
-            <div className="hidden md:flex items-center justify-between mt-3 text-sm text-mute">
+            <div className="flex items-center justify-between mt-3 text-sm text-mute">
               <div>{results.length} stays</div>
-              <button
-                onClick={() => { setNbhd("All"); setMaxPrice(100000); setBeds(0); setTag("All"); setAmenity("All"); }}
-                className="underline underline-offset-4"
-              >
-                Reset
-              </button>
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => { setNbhd("All"); setMaxPrice(100000); setBeds(0); setTag("All"); setAmenity("All"); }}
+                  className="underline underline-offset-4"
+                >
+                  Reset
+                </button>
+                <div className="flex items-center gap-1 border-l border-line pl-4">
+                  <button
+                    onClick={() => setGridView("single")}
+                    className={`p-1.5 rounded ${gridView === "single" ? "bg-ink text-cream" : "hover:bg-cream-2"}`}
+                    title="Single column"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5z"/></svg>
+                  </button>
+                  <button
+                    onClick={() => setGridView("double")}
+                    className={`p-1.5 rounded ${gridView === "double" ? "bg-ink text-cream" : "hover:bg-cream-2"}`}
+                    title="Double column"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h3a2 2 0 002-2V5a2 2 0 00-2-2H5zM12 3a2 2 0 00-2 2v10a2 2 0 002 2h3a2 2 0 002-2V5a2 2 0 00-2-2h-3z"/></svg>
+                  </button>
+                  <button
+                    onClick={() => setGridView("horizontal")}
+                    className={`p-1.5 rounded ${gridView === "horizontal" ? "bg-ink text-cream" : "hover:bg-cream-2"}`}
+                    title="Horizontal cards"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h10a2 2 0 002-2v-2a2 2 0 00-2-2H5z"/></svg>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Grid */}
-          <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className={`mt-8 gap-6 ${gridView === "single" ? "grid grid-cols-1" : gridView === "double" ? "grid grid-cols-2" : "flex flex-col"}`}>
             {results.map((l) => (
-              <Link key={l.slug} to={`/stays/${l.slug}`} className="group block">
-                <ListingCard listing={l} />
-                <div className="mt-3">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs uppercase tracking-widest text-mute">{l.neighborhood}</div>
-                    <div className="text-xs text-mute">{l.bedrooms === 0 ? "Studio" : `${l.bedrooms} bed`}</div>
-                  </div>
-                  <div className="font-serif text-xl mt-0.5">{l.title}</div>
-                  <div className="text-sm text-ink-2 line-clamp-1">{l.shortPitch}</div>
-                  <div className="mt-2 text-sm">
-                    <span className="font-medium">{fmtKES(l.pricePerNight)}</span>
-                    <span className="text-mute"> / night · ~{fmtUSD(l.pricePerNight)}</span>
-                  </div>
-                </div>
+              <Link key={l.slug} to={`/stays/${l.slug}`} className={`group block ${gridView === "horizontal" ? "flex gap-4" : ""}`}>
+                {gridView === "horizontal" ? (
+                  <>
+                    <div className="w-1/3 aspect-[4/3] rounded-2xl overflow-hidden shrink-0">
+                      <img src={l.cover} alt={l.title} className="w-full h-full object-cover transition group-hover:scale-105 duration-700" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs uppercase tracking-widest text-mute">{l.neighborhood}</div>
+                        <div className="text-xs text-mute">{l.bedrooms === 0 ? "Studio" : `${l.bedrooms} bed`}</div>
+                      </div>
+                      <div className="font-serif text-xl mt-0.5">{l.title}</div>
+                      <div className="text-sm text-ink-2 line-clamp-1">{l.shortPitch}</div>
+                      <div className="mt-2 text-sm">
+                        <span className="font-medium">{fmtKES(l.pricePerNight ?? l.price_per_night ?? 0)}</span>
+                        <span className="text-mute"> / night · ~{fmtUSD(l.pricePerNight ?? l.price_per_night ?? 0)}</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <ListingCard listing={l} />
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs uppercase tracking-widest text-mute">{l.neighborhood}</div>
+                        <div className="text-xs text-mute">{l.bedrooms === 0 ? "Studio" : `${l.bedrooms} bed`}</div>
+                      </div>
+                      <div className="font-serif text-xl mt-0.5">{l.title}</div>
+                      <div className="text-sm text-ink-2 line-clamp-1">{l.shortPitch}</div>
+                      <div className="mt-2 text-sm">
+                        <span className="font-medium">{fmtKES(l.pricePerNight ?? l.price_per_night ?? 0)}</span>
+                        <span className="text-mute"> / night · ~{fmtUSD(l.pricePerNight ?? l.price_per_night ?? 0)}</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </Link>
             ))}
             {results.length === 0 && (
