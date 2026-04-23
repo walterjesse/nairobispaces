@@ -134,11 +134,10 @@ export function StickyWhatsApp() {
       target="_blank"
       rel="noreferrer"
       aria-label="Book on WhatsApp"
-      className="fixed z-50 bottom-5 right-5 inline-flex items-center gap-2 pl-4 pr-5 py-3 rounded-full bg-[var(--color-whatsapp)] text-white shadow-xl shadow-black/20 hover:scale-[1.03] transition pulse-ring"
+      className="fixed z-50 bottom-5 right-5 inline-flex items-center justify-center p-3 rounded-full bg-[var(--color-whatsapp)] text-white shadow-xl shadow-black/20 hover:scale-[1.03] transition pulse-ring"
       style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
     >
-      <WaIcon className="size-5" colored={true} />
-      <span className="text-sm font-semibold">Book on WhatsApp</span>
+      <WaIcon className="size-6" colored={false} />
     </a>
   );
 }
